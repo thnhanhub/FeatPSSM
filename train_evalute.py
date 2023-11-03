@@ -93,7 +93,6 @@ if __name__ == "__main__":
     pos = np.concatenate([pssm_PA, pssm_PB], axis=1)
     neg = np.concatenate([pssm_NA, pssm_NB], axis=1)
     X = np.concatenate([pos, neg], axis=0)
-
     y = np.array([1] * len(pos) + [0] * len(neg))
     print("X, y:", X.shape, y.shape)
 
