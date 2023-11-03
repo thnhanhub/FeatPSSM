@@ -42,7 +42,7 @@ import pandas as pd
 #     return lst_path_train, lst_label_train
 
 
-def get_PSSM(file_name):
+def get_PSSM(file_name, n_cols_take=20):
     with open(file_name) as f:
         lines = f.readlines()
         start_line = 3
@@ -54,7 +54,7 @@ def get_PSSM(file_name):
         # print(end_line)
         # print(lines[end_line])
         # print(end_line - start_line + 1)
-        values = np.zeros((end_line - start_line + 1, 20))
+        values = np.zeros((end_line - start_line + 1, n_cols_take))
 
         for i in range(start_line, end_line + 1):
             strs = lines[i].strip().split()[2:22]
@@ -64,26 +64,33 @@ def get_PSSM(file_name):
 
 
 def make_dataset(path_to_datset_dir):
+    def make_from_pairs(df_pairs: pd.DataFrame):
+        list_pssm_A = []
+        for prot_id in df_pairs['proteinA']:
+            list_pssm_A.append(get_PSSM(path_to_datset_dir + "/PSSM_profile/" + prot_id + ".pssm"))
+        pickle.dump(list_pssm_A, open("yestcore_neg_A_pssm.pkl", "wb"))
+        print("Number of PSSMs,", len(list_pssm_A))
+        print("Size of the first PSSM,", list_pssm_A[0].shape)
+        print("Saved")
+
+        list_pssm_B = []
+        for prot_id in df_pairs['proteinB']:
+            list_pssm_B.append(get_PSSM(path_to_datset_dir + "/PSSM_profile/" + prot_id + ".pssm"))
+        pickle.dump(list_pssm_B, open("yestcore_neg_A_pssm.pkl", "wb"))
+        print("Number of PSSMs,", len(list_pssm_B))
+        print("Size of the first PSSM,", list_pssm_B[0].shape)
+        print("Saved")
+
+        return 0
+
     print("\nGet PSSM ...")
 
-    df_pairs = pd.read_csv(path_to_datset_dir, sep='\t')
-    list_pssm_A = []
-    for prot_id in df_pairs['proteinA']:
-        list_pssm_A.append(get_PSSM(path_to_datset_dir + "/PSSM_profile/" + prot_id + ".pssm"))
-    pickle.dump(list_pssm_A, open("yestcore_neg_A_pssm.pkl", "wb"))
-    print("Number of PSSMs,", len(list_pssm_A))
-    print("Size of a PSSM,", list_pssm_A[0].shape)
-    print("Saved")
+    pos_pairs = pd.read_csv(path_to_datset_dir + '/positive.txt', sep='\t')
+    make_from_pairs(pos_pairs)
+    neg_pairs = pd.read_csv(path_to_datset_dir + '/negative.txt', sep='\t')
+    make_from_pairs(neg_pairs)
 
-    list_pssm_B = []
-    for prot_id in df_pairs['proteinB']:
-        list_pssm_B.append(get_PSSM(path_to_datset_dir + "/PSSM_profile/" + prot_id + ".pssm"))
-    pickle.dump(list_pssm_B, open("yestcore_neg_A_pssm.pkl", "wb"))
-    print("Number of PSSMs,", len(list_pssm_B))
-    print("Size of a PSSN,", list_pssm_B[0].shape)
-    print("Saved")
-
-    return list_pssm_A, list_pssm_B
+    return 0
 
 
 if __name__ == "__main__":
