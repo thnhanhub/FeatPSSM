@@ -12,8 +12,11 @@ from sklearn.ensemble import RandomForestClassifier
 
 import matplotlib.pyplot as plt
 
+from hilbert_transform import transform
 from utils.plot_utils.plot_roc_pr_curve import plot_folds
 from utils.report_result import my_cv_report, print_metrics
+
+from scipy.signal import hilbert, hilbert2
 
 
 def fix_len_pssm(lst_PSSM, fixlen, fixvalue=0.0):
@@ -39,7 +42,7 @@ def eval_model(X_, y_):
         train_X, train_y = X_[tr_inds], y_[tr_inds]
         test_X, test_y = X_[te_inds], y_[te_inds]
 
-        model = RandomForestClassifier(500)
+        model = RandomForestClassifier(100)
 
         train_hist = model.fit(train_X, train_y)
 
@@ -66,7 +69,9 @@ def eval_model(X_, y_):
 if __name__ == "__main__":
     print("\nParameters ...")
 
-    fix_len = 600
+    fix_len = 50
+    np.random.seed(42)  # 42
+
     print("Fix legnth:", fix_len)
 
     print("\nLoad PSSM data ...")
@@ -83,18 +88,56 @@ if __name__ == "__main__":
 
     print('Data PSSM', pssm_NA.shape, pssm_NB.shape, pssm_PA.shape, pssm_PB.shape)
 
+    print('\nHilbert transforming ...')
+
+    pssm_NA = transform(pssm_NA)
+    pssm_NB = transform(pssm_NB)
+    pssm_PA = transform(pssm_PA)
+    pssm_PB = transform(pssm_PB)
+
+    print('Done')
+
     print("\nMake X, y ...")
 
-    pssm_NA = np.reshape(pssm_NA, (-1, fix_len * 20))
-    pssm_NB = np.reshape(pssm_NB, (-1, fix_len * 20))
-    pssm_PA = np.reshape(pssm_PA, (-1, fix_len * 20))
-    pssm_PB = np.reshape(pssm_PB, (-1, fix_len * 20))
+    pssm_NA = np.reshape(pssm_NA, (-1, pssm_NA.shape[1] * pssm_NA.shape[2]))
+    pssm_NB = np.reshape(pssm_NB, (-1, pssm_NB.shape[1] * pssm_NB.shape[2]))
+    pssm_PA = np.reshape(pssm_PA, (-1, pssm_PA.shape[1] * pssm_PA.shape[2]))
+    pssm_PB = np.reshape(pssm_PB, (-1, pssm_PB.shape[1] * pssm_PB.shape[2]))
 
     pos = np.concatenate([pssm_PA, pssm_PB], axis=1)
     neg = np.concatenate([pssm_NA, pssm_NB], axis=1)
+
     X = np.concatenate([pos, neg], axis=0)
     y = np.array([1] * len(pos) + [0] * len(neg))
+
     print("X, y:", X.shape, y.shape)
 
     print("\nEvaluate model ...")
     eval_model(X, y)
+
+# Final scores (mean)
+# |Accuracy       |Sensitivity    |Specificity    |Precision      |NPV            |F1-score       |MCC-score      |AUC            |AUPR           |
+# |---------------|---------------|---------------|---------------|---------------|---------------|---------------|---------------|---------------|
+# |  94.00%+/-0.35%|  90.56%+/-0.32%|  97.44%+/-0.59%|  97.26%+/-0.62%|  91.17%+/-0.28%|  93.79%+/-0.36%|  88.22%+/-0.73%|  96.94%+/-0.26%|  97.70%+/-0.20%|
+
+# Final scores (mean)
+# |Accuracy       |Sensitivity    |Specificity    |Precision      |NPV            |F1-score       |MCC-score      |AUC            |AUPR           |
+# |---------------|---------------|---------------|---------------|---------------|---------------|---------------|---------------|---------------|
+# |  94.05%+/-0.29%|  90.65%+/-0.12%|  97.44%+/-0.66%|  97.26%+/-0.68%|  91.25%+/-0.08%|  93.84%+/-0.28%|  88.30%+/-0.62%|  97.02%+/-0.20%|  97.75%+/-0.16%|
+
+# Final scores (mean)
+# |Accuracy       |Sensitivity    |Specificity    |Precision      |NPV            |F1-score       |MCC-score      |AUC            |AUPR           |
+# |---------------|---------------|---------------|---------------|---------------|---------------|---------------|---------------|---------------|
+# |  93.97%+/-0.39%|  90.56%+/-0.25%|  97.37%+/-0.57%|  97.18%+/-0.60%|  91.16%+/-0.26%|  93.75%+/-0.40%|  88.14%+/-0.81%|  96.97%+/-0.15%|  97.72%+/-0.16%|
+
+
+# Final scores (mean)
+# |Accuracy       |Sensitivity    |Specificity    |Precision      |NPV            |F1-score       |MCC-score      |AUC            |AUPR           |
+# |---------------|---------------|---------------|---------------|---------------|---------------|---------------|---------------|---------------|
+# |  93.92%+/-0.37%|  90.24%+/-0.12%|  97.60%+/-0.73%|  97.42%+/-0.77%|  90.91%+/-0.12%|  93.69%+/-0.36%|  88.09%+/-0.79%|  97.01%+/-0.23%|  97.72%+/-0.20%|
+
+
+# Final scores (mean)
+# |Accuracy       |Sensitivity    |Specificity    |Precision      |NPV            |F1-score       |MCC-score      |AUC            |AUPR           |
+# |---------------|---------------|---------------|---------------|---------------|---------------|---------------|---------------|---------------|
+# |  93.95%+/-0.34%|  90.40%+/-0.25%|  97.50%+/-0.51%|  97.31%+/-0.53%|  91.04%+/-0.24%|  93.73%+/-0.35%|  88.12%+/-0.70%|  96.96%+/-0.19%|  97.70%+/-0.19%|
