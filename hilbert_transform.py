@@ -2,6 +2,7 @@ import math
 
 import numpy as np
 from scipy.signal import hilbert2, hilbert
+from plot_hilbert_pssm import plot_h_p
 
 
 def sigmoid(x):
@@ -13,6 +14,5 @@ def transform(X_, transformer=None):
     for x in X_:
         # X_hat_.append(hilbert(x, N=40, axis=1).real)
         # x = sigmoid(x)
-        X_hat_.append(hilbert(x).real)
-
+        X_hat_.append(hilbert(x).imag)
     return np.array(X_hat_)

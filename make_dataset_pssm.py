@@ -16,6 +16,7 @@ import pickle
 
 import numpy as np
 import pandas as pd
+from zipfile import ZipFile
 
 
 # def load_lst_file(file_lst, dir_name):
@@ -42,32 +43,34 @@ import pandas as pd
 #     return lst_path_train, lst_label_train
 
 
-def get_PSSM(file_name, n_cols_take=20):
-    with open(file_name) as f:
-        lines = f.readlines()
-        start_line = 3
+def get_PSSM(zip_file_name, file_name, n_cols_take=20):
+    with ZipFile(zip_file_name) as z:
+        with z.open(file_name) as f:
+            readf = f.readlines()
+            lines = [line.decode("utf-8") for line in readf]
+            start_line = 3
 
-        end_line = 0
-        while lines[end_line].find(r"Lambda") == -1:
-            end_line += 1
-        end_line -= 2
-        # print(end_line)
-        # print(lines[end_line])
-        # print(end_line - start_line + 1)
-        values = np.zeros((end_line - start_line + 1, n_cols_take))
+            end_line = 0
+            while lines[end_line].find(r"Lambda") == -1:
+                end_line += 1
+            end_line -= 2
+            # print(end_line)
+            # print(lines[end_line])
+            # print(end_line - start_line + 1)
+            values = np.zeros((end_line - start_line + 1, n_cols_take))
 
-        for i in range(start_line, end_line + 1):
-            strs = lines[i].strip().split()[2:22]
-            for j in range(20):
-                values[i - start_line][j] = int(strs[j])
-    return values
+            for i in range(start_line, end_line + 1):
+                strs = lines[i].strip().split()[2:22]
+                for j in range(20):
+                    values[i - start_line][j] = int(strs[j])
+        return values
 
 
 def make_dataset(path_to_datset_dir):
     def make_from_pairs(df_pairs: pd.DataFrame, prefix_save):
         list_pssm_A = []
         for prot_id in df_pairs['proteinA']:
-            list_pssm_A.append(get_PSSM(path_to_datset_dir + "/PSSM_profile/" + prot_id + ".pssm"))
+            list_pssm_A.append(get_PSSM(path_to_datset_dir + "/PSSM_profile.zip", prot_id + ".pssm"))
         pickle.dump(list_pssm_A, open(prefix_save + "_A_pssm.pkl", "wb"))
         print("Number of PSSMs;", len(list_pssm_A))
         print("Size of the first PSSM;", list_pssm_A[0].shape)
@@ -75,7 +78,7 @@ def make_dataset(path_to_datset_dir):
 
         list_pssm_B = []
         for prot_id in df_pairs['proteinB']:
-            list_pssm_B.append(get_PSSM(path_to_datset_dir + "/PSSM_profile/" + prot_id + ".pssm"))
+            list_pssm_B.append(get_PSSM(path_to_datset_dir + "/PSSM_profile.zip", prot_id + ".pssm"))
         pickle.dump(list_pssm_B, open(prefix_save + "_B_pssm.pkl", "wb"))
         print("Number of PSSMs;", len(list_pssm_B))
         print("Size of the first PSSM;", list_pssm_B[0].shape)
