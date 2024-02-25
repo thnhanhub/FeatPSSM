@@ -27,9 +27,9 @@ def plot_folds(plt, arr_true_y: list, arr_prob_y: list):
 
     # get fpr, tpr scores
     for i, (y_test, y_prob) in enumerate(zip(arr_true_y, arr_prob_y)):
-        # # print(y_test)
-        # if np.ndim(y_prob) > 1:
-        #     y_prob = y_prob[:, 1]  # only use prob of class 1
+
+        if np.ndim(y_prob) > 1:
+            y_prob = y_prob[:, 1]  # only use prob of class 1
         fpr, tpr, _ = roc_curve(y_test, y_prob)
         roc_auc = auc(fpr, tpr)
         # plot ROC curve
@@ -48,7 +48,7 @@ def plot_folds(plt, arr_true_y: list, arr_prob_y: list):
     mean_roc_auc = auc(mean_fpr, mean_tpr)
     std_roc_auc = np.std(roc_aucs)
     ax_roc.plot(mean_fpr, mean_tpr, color='b',
-                label=r'Mean (AUC = %0.3f $\pm$ %0.2f)' % (mean_roc_auc, std_roc_auc),
+                label=r'Mean (AUC = %0.3f $\pm$ %0.3f)' % (mean_roc_auc, std_roc_auc),
                 lw=2, alpha=.8)
 
     std_tpr = np.std(tprs, axis=0)
@@ -71,8 +71,9 @@ def plot_folds(plt, arr_true_y: list, arr_prob_y: list):
     # pres = []; rpc_aucs = []
     # get precision, recall scores
     for i, (y_test, y_prob) in enumerate(zip(arr_true_y, arr_prob_y)):
-        # if np.ndim(y_prob) > 1:
-        #     y_prob = y_prob[:, 1]  # only use prob of class 1
+        if np.ndim(y_prob) > 1:
+            y_prob = y_prob[:, 1]  # only use prob of class 1
+        
         precision, recall, _ = precision_recall_curve(y_test, y_prob)
         average_precision = average_precision_score(y_test,
                                                     y_prob)  # Quay lại sử dụng lệnh này nếu có sai sót
@@ -102,7 +103,7 @@ def plot_folds(plt, arr_true_y: list, arr_prob_y: list):
 
     # Ve duong mean
     all_y_test = np.concatenate(arr_true_y)
-    all_y_prob = np.concatenate(arr_prob_y)
+    all_y_prob = np.concatenate(arr_prob_y)[:, 1]
     precision, recall, _ = precision_recall_curve(all_y_test, all_y_prob)
 
     ax_rpc.plot(

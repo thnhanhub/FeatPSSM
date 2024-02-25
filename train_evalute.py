@@ -9,6 +9,7 @@ import numpy as np
 from sklearn.model_selection import StratifiedKFold
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+from rotation_forest import RotationForestClassifier
 
 import matplotlib.pyplot as plt
 
@@ -17,7 +18,6 @@ from utils.plot_utils.plot_roc_pr_curve import plot_folds
 from utils.report_result import my_cv_report, print_metrics
 
 from scipy.signal import hilbert, hilbert2
-
 
 def fix_len_pssm(lst_PSSM, fixlen, fixvalue=0.0):
     new = []
@@ -42,10 +42,9 @@ def eval_model(X_, y_):
         train_X, train_y = X_[tr_inds], y_[tr_inds]
         test_X, test_y = X_[te_inds], y_[te_inds]
 
-        model = RandomForestClassifier(100)
-
+        model = RandomForestClassifier(n_estimators=100, min_samples_leaf=1, min_samples_split=10)
+        # model = RotationForestClassifier()
         train_hist = model.fit(train_X, train_y)
-
         """ Report ... """
         prob_y = model.predict_proba(test_X)
         print("Prediction")
@@ -60,7 +59,7 @@ def eval_model(X_, y_):
     print("\nFinal scores (mean)")
     scores_array = np.array(scores)
     my_cv_report(scores_array)
-
+   
     plot_folds(plt, cv_test_y, cv_prob_Y)
     plt.show()
     return cv_hists
@@ -75,7 +74,7 @@ if __name__ == "__main__":
     print("Fix legnth:", fix_len)
 
     print("\nLoad PSSM data ...")
-
+    
     pssm_NA = pickle.load(open("neg_A_pssm.pkl", "rb"))
     pssm_NB = pickle.load(open("neg_B_pssm.pkl", "rb"))
     pssm_PA = pickle.load(open("pos_A_pssm.pkl", "rb"))
@@ -106,6 +105,9 @@ if __name__ == "__main__":
 
     pos = np.concatenate([pssm_PA, pssm_PB], axis=1)
     neg = np.concatenate([pssm_NA, pssm_NB], axis=1)
+    
+    print("Data interactions", pos.shape, neg.shape)
+    print("\n")
 
     X = np.concatenate([pos, neg], axis=0)
     y = np.array([1] * len(pos) + [0] * len(neg))
