@@ -21,17 +21,23 @@ from utils.report_result import my_cv_report, print_metrics
 from scipy.signal import hilbert, hilbert2
 from plot_hilbert_pssm import plot_h_p
 
-def fix_len_pssm(lst_PSSM, fixlen, fixvalue=0.0):
-    new = []
-    for ii in range(len(lst_PSSM)):
-        if len(lst_PSSM[ii]) >= fixlen:
-            new.append(lst_PSSM[ii][:fixlen])
-        else:
-            temp = np.full(shape=(fixlen - len(lst_PSSM[ii]), 20), fill_value=fixvalue)
-            temp = np.concatenate([lst_PSSM[ii], temp], axis=0)
-            new.append(temp)
-    return np.array(new)
+# def fix_len_pssm(lst_PSSM, fixlen, fixvalue=0.0):
+#     new = []
+#     for ii in range(len(lst_PSSM)):
+#         if len(lst_PSSM[ii]) >= fixlen:
+#             new.append(lst_PSSM[ii][:fixlen])
+#         else:
+#             temp = np.full(shape=(fixlen - len(lst_PSSM[ii]), 20), fill_value=fixvalue)
+#             temp = np.concatenate([lst_PSSM[ii], temp], axis=0)
+#     return np.array(new)
 
+def get_features_pssm(lst_PSSM):
+    features = []
+    hilb_feat, hilb_X =  transform(lst_PSSM)
+    for ii in range(len(lst_PSSM)):
+        features.append(np.sum(lst_PSSM[ii], axis=0))
+    features = np.concatenate([features, hilb_X, hilb_feat], axis=1)
+    return np.array(features)
 
 def eval_model(X_, y_):
     skf = StratifiedKFold(n_splits=5, random_state=48, shuffle=True)
@@ -45,8 +51,8 @@ def eval_model(X_, y_):
         test_X, test_y = X_[te_inds], y_[te_inds]
 
         # model = RandomForestClassifier()
-        model = ExtraTreesClassifier()
-        # model = RotationForestClassifier()
+        # model = ExtraTreesClassifier()
+        model = RotationForestClassifier(100)
         train_hist = model.fit(train_X, train_y)
         """ Report ... """
         prob_y = model.predict_proba(test_X)
@@ -69,12 +75,12 @@ def eval_model(X_, y_):
 
 
 if __name__ == "__main__":
-    print("\nParameters ...")
-
-    fix_len = 50
+    # print("\nParameters ...")
+    # fix_len = 50
+    
     np.random.seed(42)  # 42
 
-    print("Fix length:", fix_len)
+    # print("Fix length:", fix_len)
 
     print("\nLoad PSSM data ...")
     
@@ -82,52 +88,16 @@ if __name__ == "__main__":
     pssm_NB = pickle.load(open("neg_B_pssm.pkl", "rb"))
     pssm_PA = pickle.load(open("pos_A_pssm.pkl", "rb"))
     pssm_PB = pickle.load(open("pos_B_pssm.pkl", "rb"))
-
-    pssm_NA = fix_len_pssm(pssm_NA, fix_len)
-    pssm_NB = fix_len_pssm(pssm_NB, fix_len)
-    pssm_PA = fix_len_pssm(pssm_PA, fix_len)
-    pssm_PB = fix_len_pssm(pssm_PB, fix_len)
     
-    sum_pssm_NA = np.sum(pssm_NA, axis=1)
-    sum_pssm_NB = np.sum(pssm_NA, axis=1)
-    sum_pssm_PA = np.sum(pssm_NA, axis=1)
-    sum_pssm_PB = np.sum(pssm_NA, axis=1)
     # plot_h_p(pssm_NA[0], 50)
+    # print('Data PSSM ', pssm_NA.shape, pssm_NB.shape, pssm_PA.shape, pssm_PB.shape)
     
-    print('Data PSSM', pssm_NA.shape, pssm_NB.shape, pssm_PA.shape, pssm_PB.shape)
+    pssm_NA = get_features_pssm(pssm_NA)
+    pssm_NB = get_features_pssm(pssm_NB)
+    pssm_PA = get_features_pssm(pssm_PA)
+    pssm_PB = get_features_pssm(pssm_PB)
 
-    print('\nHilbert transforming ...')
-
-    features_NA, pssm_NA = transform(pssm_NA)
-    features_NB, pssm_NB = transform(pssm_NB)
-    features_PA, pssm_PA = transform(pssm_PA)
-    features_PB, pssm_PB = transform(pssm_PB)
-    
-    sum_hilb_NA = np.sum(pssm_NA, axis=1)
-    sum_hilb_NB = np.sum(pssm_NA, axis=1)
-    sum_hilb_PA = np.sum(pssm_NA, axis=1)
-    sum_hilb_PB = np.sum(pssm_NA, axis=1)
-
-    print('Done')
-    
-    print('Data Hilbert', pssm_NA.shape, pssm_NB.shape, pssm_PA.shape, pssm_PB.shape)
-    
-    print("\nMake X, y ...")
-
-    pssm_NA = np.reshape(pssm_NA, (-1, pssm_NA.shape[1] * pssm_NA.shape[2]))
-    pssm_NB = np.reshape(pssm_NB, (-1, pssm_NB.shape[1] * pssm_NB.shape[2]))
-    pssm_PA = np.reshape(pssm_PA, (-1, pssm_PA.shape[1] * pssm_PA.shape[2]))
-    pssm_PB = np.reshape(pssm_PB, (-1, pssm_PB.shape[1] * pssm_PB.shape[2]))
-    
-    features_NA = np.reshape(features_NA, (-1, features_NA.shape[1] * features_NA.shape[2]))
-    features_NB = np.reshape(features_NB, (-1, features_NB.shape[1] * features_NB.shape[2]))
-    features_PA = np.reshape(features_PA, (-1, features_PA.shape[1] * features_PA.shape[2]))
-    features_PB = np.reshape(features_PB, (-1, features_PB.shape[1] * features_PB.shape[2]))
-    
-    pssm_NA = np.concatenate([pssm_NA, sum_hilb_NA, sum_pssm_NA, features_NA], axis=1)
-    pssm_NB = np.concatenate([pssm_NB, sum_hilb_NB, sum_pssm_NB, features_NB], axis=1)
-    pssm_PA = np.concatenate([pssm_PA, sum_hilb_PA, sum_pssm_PA, features_PA], axis=1)
-    pssm_PB = np.concatenate([pssm_PB, sum_hilb_PB, sum_pssm_PB, features_PB], axis=1)
+    print('Data features ', pssm_NA.shape, pssm_NB.shape, pssm_PA.shape, pssm_PB.shape)
 
     pos = np.concatenate([pssm_PA, pssm_PB], axis=1)
     neg = np.concatenate([pssm_NA, pssm_NB], axis=1)
@@ -201,28 +171,28 @@ if __name__ == "__main__":
 # Random Forest sử dụng Hilbert
 # |Accuracy    |Sensitivity |Specificity |Precision   |NPV         |F1-score    |MCC-score   |AUC         |AUPR        |
 # |------------|------------|------------|------------|------------|------------|------------|------------|------------|
-# |      97.63%|      96.16%|      99.11%|      99.08%|      96.27%|      97.60%|      95.31%|      99.87%|      99.86%|
+# |      94.37%|      91.42%|      97.32%|      97.15%|      91.90%|      94.20%|      88.89%|      98.10%|      98.41%|
 
 # |Accuracy    |Sensitivity |Specificity |Precision   |NPV         |F1-score    |MCC-score   |AUC         |AUPR        |
 # |------------|------------|------------|------------|------------|------------|------------|------------|------------|
-# |      97.14%|      95.35%|      98.93%|      98.89%|      95.51%|      97.09%|      94.34%|      99.81%|      99.81%|
+# |      94.68%|      91.87%|      97.50%|      97.35%|      92.30%|      94.53%|      89.51%|      98.02%|      98.43%|
 
 # |Accuracy    |Sensitivity |Specificity |Precision   |NPV         |F1-score    |MCC-score   |AUC         |AUPR        |
 # |------------|------------|------------|------------|------------|------------|------------|------------|------------|
-# |      97.18%|      94.73%|      99.64%|      99.62%|      94.97%|      97.11%|      94.48%|      99.87%|      99.87%|
+# |      94.24%|      90.88%|      97.59%|      97.41%|      91.46%|      94.04%|      88.67%|      98.06%|      98.42%|
 
 # |Accuracy    |Sensitivity |Specificity |Precision   |NPV         |F1-score    |MCC-score   |AUC         |AUPR        |
 # |------------|------------|------------|------------|------------|------------|------------|------------|------------|
-# |      96.74%|      93.66%|      99.82%|      99.81%|      94.02%|      96.63%|      93.65%|      99.88%|      99.89%|
+# |      94.73%|      91.51%|      97.94%|      97.80%|      92.02%|      94.55%|      89.64%|      97.76%|      98.24%|
 
 # |Accuracy    |Sensitivity |Specificity |Precision   |NPV         |F1-score    |MCC-score   |AUC         |AUPR        |
 # |------------|------------|------------|------------|------------|------------|------------|------------|------------|
-# |      97.68%|      95.53%|      99.82%|      99.81%|      95.72%|      97.62%|      95.44%|      99.94%|      99.94%|
+# |      94.90%|      91.41%|      98.39%|      98.27%|      91.98%|      94.72%|      90.03%|      98.34%|      98.64%|
 
 # Final scores (mean)
 # |Accuracy       |Sensitivity    |Specificity    |Precision      |NPV            |F1-score       |MCC-score      |AUC            |AUPR           |
 # |---------------|---------------|---------------|---------------|---------------|---------------|---------------|---------------|---------------|
-# |  97.27%+/-0.35%|  95.08%+/-0.85%|  99.46%+/-0.37%|  99.44%+/-0.39%|  95.30%+/-0.76%|  97.21%+/-0.37%|  94.64%+/-0.66%|  99.88%+/-0.04%|  99.87%+/-0.04%|
+# |  94.58%+/-0.24%|  91.42%+/-0.31%|  97.75%+/-0.38%|  97.60%+/-0.40%|  91.93%+/-0.27%|  94.41%+/-0.25%|  89.35%+/-0.50%|  98.05%+/-0.19%|  98.43%+/-0.13%|
 
 
 # Rotation Forest không biến đổi Hilbert
@@ -254,51 +224,28 @@ if __name__ == "__main__":
 # Rotation Forest sử dụng biến đổi Hilbert
 # |Accuracy    |Sensitivity |Specificity |Precision   |NPV         |F1-score    |MCC-score   |AUC         |AUPR        |
 # |------------|------------|------------|------------|------------|------------|------------|------------|------------|
-# |      94.55%|      91.51%|      97.59%|      97.43%|      92.00%|      94.38%|      89.26%|      96.53%|      96.15%|
+# |      89.59%|      87.85%|      91.33%|      91.02%|      88.26%|      89.40%|      79.23%|      92.44%|      90.68%|
 
 # |Accuracy    |Sensitivity |Specificity |Precision   |NPV         |F1-score    |MCC-score   |AUC         |AUPR        |
 # |------------|------------|------------|------------|------------|------------|------------|------------|------------|
-# |      95.17%|      92.14%|      98.21%|      98.10%|      92.59%|      95.02%|      90.52%|      97.06%|      96.59%|
+# |      89.72%|      88.83%|      90.62%|      90.45%|      89.03%|      89.63%|      79.46%|      91.80%|      89.66%|
 
 # |Accuracy    |Sensitivity |Specificity |Precision   |NPV         |F1-score    |MCC-score   |AUC         |AUPR        |
 # |------------|------------|------------|------------|------------|------------|------------|------------|------------|
-# |      94.73%|      91.24%|      98.21%|      98.08%|      91.81%|      94.54%|      89.67%|      97.78%|      97.58%|
+# |      89.23%|      85.97%|      92.49%|      91.97%|      86.83%|      88.87%|      78.63%|      92.57%|      90.82%|
 
 # |Accuracy    |Sensitivity |Specificity |Precision   |NPV         |F1-score    |MCC-score   |AUC         |AUPR        |
 # |------------|------------|------------|------------|------------|------------|------------|------------|------------|
-# |      95.71%|      92.67%|      98.75%|      98.67%|      93.09%|      95.58%|      91.59%|      97.77%|      97.71%|
+# |      90.30%|      88.92%|      91.68%|      91.45%|      89.21%|      90.17%|      80.63%|      93.09%|      91.73%|
 
 # |Accuracy    |Sensitivity |Specificity |Precision   |NPV         |F1-score    |MCC-score   |AUC         |AUPR        |
 # |------------|------------|------------|------------|------------|------------|------------|------------|------------|
-# |      95.44%|      92.75%|      98.12%|      98.02%|      93.13%|      95.31%|      91.01%|      96.99%|      96.40%|
+# |      89.63%|      87.66%|      91.60%|      91.25%|      88.13%|      89.42%|      79.32%|      92.79%|      91.25%|
 
 # Final scores (mean)
 # |Accuracy       |Sensitivity    |Specificity    |Precision      |NPV            |F1-score       |MCC-score      |AUC            |AUPR           |
 # |---------------|---------------|---------------|---------------|---------------|---------------|---------------|---------------|---------------|
-# |  95.12%+/-0.43%|  92.06%+/-0.61%|  98.18%+/-0.37%|  98.06%+/-0.39%|  92.52%+/-0.54%|  94.97%+/-0.45%|  90.41%+/-0.85%|  97.23%+/-0.48%|  96.89%+/-0.63%|
+# |  89.69%+/-0.35%|  87.84%+/-1.07%|  91.54%+/-0.60%|  91.23%+/-0.50%|  88.29%+/-0.84%|  89.50%+/-0.42%|  79.45%+/-0.65%|  92.54%+/-0.43%|  90.83%+/-0.69%|
+
 
 # Extra Tree sử dụng Hilbert
-# |Accuracy    |Sensitivity |Specificity |Precision   |NPV         |F1-score    |MCC-score   |AUC         |AUPR        |
-# |------------|------------|------------|------------|------------|------------|------------|------------|------------|
-# |      97.54%|      95.62%|      99.46%|      99.44%|      95.78%|      97.49%|      95.16%|      99.91%|      99.90%|
-
-# |Accuracy    |Sensitivity |Specificity |Precision   |NPV         |F1-score    |MCC-score   |AUC         |AUPR        |
-# |------------|------------|------------|------------|------------|------------|------------|------------|------------|
-# |      96.87%|      94.64%|      99.11%|      99.06%|      94.87%|      96.80%|      93.84%|      99.85%|      99.85%|
-
-# |Accuracy    |Sensitivity |Specificity |Precision   |NPV         |F1-score    |MCC-score   |AUC         |AUPR        |
-# |------------|------------|------------|------------|------------|------------|------------|------------|------------|
-# |      97.23%|      94.73%|      99.73%|      99.72%|      94.98%|      97.16%|      94.58%|      99.92%|      99.91%|
-
-# |Accuracy    |Sensitivity |Specificity |Precision   |NPV         |F1-score    |MCC-score   |AUC         |AUPR        |
-# |------------|------------|------------|------------|------------|------------|------------|------------|------------|
-# |      96.78%|      93.74%|      99.82%|      99.81%|      94.10%|      96.68%|      93.74%|      99.94%|      99.93%|
-
-# |Accuracy    |Sensitivity |Specificity |Precision   |NPV         |F1-score    |MCC-score   |AUC         |AUPR        |
-# |------------|------------|------------|------------|------------|------------|------------|------------|------------|
-# |      97.41%|      94.99%|      99.82%|      99.81%|      95.23%|      97.34%|      94.93%|      99.96%|      99.96%|
-
-# Final scores (mean)
-# |Accuracy       |Sensitivity    |Specificity    |Precision      |NPV            |F1-score       |MCC-score      |AUC            |AUPR           |
-# |---------------|---------------|---------------|---------------|---------------|---------------|---------------|---------------|---------------|
-# |  97.17%+/-0.30%|  94.74%+/-0.61%|  99.59%+/-0.27%|  99.57%+/-0.29%|  94.99%+/-0.55%|  97.10%+/-0.31%|  94.45%+/-0.57%|  99.91%+/-0.03%|  99.91%+/-0.03%|
