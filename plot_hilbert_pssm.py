@@ -4,12 +4,19 @@ from scipy.signal import hilbert
 
 
 def plot_h_p(lst_pssm, len):
-        lst_hilbert = hilbert(lst_pssm[:len]).imag
-        
-        plt.figure(figsize=(12, 6))
-        plt.plot(lst_pssm[:len].flatten(), marker='o', markersize=5, label="pssm")        
-        plt.plot(lst_hilbert.flatten(), marker='o', markersize=5, label="hilbert")
-        plt.title("Đồ thị biểu diễn ma trận PSSM và sau khi áp dụng biến đổi Hilbert")
+        fix_pssm = lst_pssm[:len].reshape(-1)
+        lst_hilbert = hilbert(fix_pssm).imag
+
+        # lst_hilbert = hilbert(lst_pssm)
+        mean_ = np.mean([fix_pssm, lst_hilbert], axis=0)
+        std_ = np.std([fix_pssm, lst_hilbert], axis=0)
+
+        # std_ampl = np.std(amp, axis=0)
+        plt.rc("font", size=14)
+        plt.figure(figsize=(14, 7))
+        plt.plot(mean_, label="Trung bình")        
+        plt.plot(std_, label="Độ lệch chuẩn")
+        plt.title("Đồ thị biểu diễn ma trận PSSM và sau khi áp dụng biến đổi Hilbert.")
         plt.xlabel("Vị trí")
         plt.ylabel("Điểm")
         plt.legend()
@@ -20,9 +27,7 @@ if __name__ == "__main__":
                 [2, 2, 1, 0, 0, 2, 1, 1, 2],
                 [1, 3, 7, 10, 5, 3, 2, 1, 4], 
                 [1, 4, 7, 2, 3, 6, 2, 5, 3]])
-
-        hilbert_matrix = hilbert(pssm_matrix).imag
         
-        plot_h_p(pssm_matrix)
+        plot_h_p(pssm_matrix, 4)
 
 
