@@ -11,13 +11,6 @@ def extracted_features(analytic_signal):
     features = []
     magnitude = np.abs(analytic_signal)
     phase = np.angle(analytic_signal)
-    
-    # time = np.arange(analytic_signal.shape[0])
-    # gradient_phase_columnwise = np.gradient(phase, axis=0)
-    # frequency = np.zeros_like(gradient_phase_columnwise)
-    # for i in range(len(time)):
-    #     if time[i] != 0:
-    #         frequency[i] = np.abs(gradient_phase_columnwise[i]) / (360 * time[i])
             
     # Biên độ
     energy = np.sum(magnitude ** 2, axis=0)
@@ -71,4 +64,5 @@ def transform(X_, transformer=None):
         anal_signal = hilbert(x, axis=1)
         X_hat_.append(np.sum(anal_signal.imag, axis=0))
         features.append(extracted_features(anal_signal))
-    return np.array(features), np.array(X_hat_)
+    features = np.concatenate([features, X_hat_], axis=1)
+    return features
